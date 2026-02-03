@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Return Codes.
 typedef enum : bool {
@@ -67,7 +71,7 @@ typedef enum : uint8_t {
 #endif
 
 
-#if __STDC_VERSION__ >= 202311L || defined(__cplusplus)
+#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)|| defined(__cplusplus)
 #define STATIC_ASSERT(check, message) static_assert(check, message)
 #elif __STDC_VERSION__ < 201112L
 // empty, as not supported
@@ -142,20 +146,22 @@ ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZmapResult zmap_resize_##Name(ZMAP_TYPENAME_MA
                                                                                                                 \
 ZMAP_FUN_ATTRIBUTES [[nodiscard]] ValT* zmap_insert_slot_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key, bool allow_overwrite);       \
                                                                                                                 \
-ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZmapInsertResult zmap_insert_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key, const ValT val, bool allow_overwrite);                 \
+ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZmapInsertResult zmap_insert_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key,  ValT const val, bool allow_overwrite);                 \
                                                                                                                 \
 ZMAP_FUN_ATTRIBUTES [[nodiscard]] inline ValT* zmap_put_slot_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key){       \
     return zmap_insert_slot_##Name(m, key, true);                                                               \
 }                                                                                                               \
                                                                                                                 \
-ZMAP_FUN_ATTRIBUTES [[nodiscard]] inline ZmapResult zmap_put_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key, const ValT val){                 \
+ZMAP_FUN_ATTRIBUTES [[nodiscard]] inline ZmapResult zmap_put_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key, ValT const val){                 \
     const ZmapInsertResult result = zmap_insert_##Name(m, key, val, true);                                                                \
     return result == ZmapInsertResultOk ? ZmapResultOk : ZmapResultErr;                                         \
 }                                                                                                               \
                                                                                                                 \
 ZMAP_FUN_ATTRIBUTES [[nodiscard]] ValT* zmap_get_mut_##Name(ZMAP_TYPENAME_MAP(Name) *m, const KeyT key);             \
                                                                                                                 \
-ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ValT* zmap_get_##Name(const ZMAP_TYPENAME_MAP(Name) *m, const KeyT key);             \
+ZMAP_FUN_ATTRIBUTES [[nodiscard]]  ValT const * zmap_get_##Name(const ZMAP_TYPENAME_MAP(Name) *m, const KeyT key);             \
+                                                                                                                \
+ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ZMAP_TYPENAME_ENTRY(Name)* zmap_get_entry_##Name(const ZMAP_TYPENAME_MAP(Name) *m, const KeyT key);             \
                                                                                                                 \
 ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ZMAP_TYPENAME_ENTRY(Name)* zmap_get_entry_at_##Name(const ZMAP_TYPENAME_MAP(Name) *m, size_t index);             \
                                                                                                                 \
@@ -178,6 +184,7 @@ ZMAP_COMPARE_FUNC_SIG(KeyT, KeyName);
 #define ZMAP_INSERT(Name, Map, Key, Value, AllowOverwrite) zmap_insert_##Name(Map, Key, Value, AllowOverwrite)
 #define ZMAP_INSERT_SLOT(Name, Map, Key, AllowOverwrite) zmap_insert_slot_##Name(Map, Key, AllowOverwrite)
 #define ZMAP_GET(Name, Map, Key)                        zmap_get_##Name(Map, Key)
+#define ZMAP_GET_ENTRY(Name, Map, Key)                        zmap_get_entry_##Name(Map, Key)
 #define ZMAP_GET_MUT(Name, Map, Key)                    zmap_get_mut_##Name(Map, Key)
 #define ZMAP_GET_ENTRY_AT(Name, Map, Index)             zmap_get_entry_at_##Name(Map, Index)
 #define ZMAP_REM(Name, Map, Key)        zmap_remove_##Name(Map, Key)
@@ -185,6 +192,8 @@ ZMAP_COMPARE_FUNC_SIG(KeyT, KeyName);
 #define ZMAP_CLEAR(Name, Map)           zmap_clear_##Name(Map)
 
 #define ZMAP_INIT(Name) zmap_init_##Name()
+
+#define ZMAP_EMPTY_MAP(TypeName) ((ZMAP_TYPENAME_MAP(TypeName)){ .buckets=NULL, .capacity = 0, .count = 0, .occupied = 0}   )   
 
 #define ZMAP_SIZE(v) (v).count
 #define ZMAP_IS_EMPTY(v) ((v).count == 0)
@@ -275,7 +284,7 @@ ZMAP_FUN_ATTRIBUTES ValT* zmap_insert_slot_##Name(ZMAP_TYPENAME_MAP(Name) *m, Ke
         return NULL;                                                                                           \
     }                                                                                                           \
                                                                                                                 \
-ZMAP_FUN_ATTRIBUTES ZmapInsertResult zmap_insert_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key, const ValT val, bool allow_overwrite) {                                           \
+ZMAP_FUN_ATTRIBUTES ZmapInsertResult zmap_insert_##Name(ZMAP_TYPENAME_MAP(Name) *m, KeyT key,  ValT const val, bool allow_overwrite) {                                           \
     ValT* slot = zmap_insert_slot_##Name(m, key, allow_overwrite);                                               \
     if (slot == NULL) { return ZmapInsertResultErr; }                                                              \
     if(slot == ZMAP_WOULD_OVERWRITE) { return ZmapInsertResultWouldOverwrite; }                  \
@@ -299,7 +308,7 @@ ZMAP_FUN_ATTRIBUTES ValT* zmap_get_mut_##Name(ZMAP_TYPENAME_MAP(Name) *m, const 
         return NULL;                                                                                            \
     }                                                                                                           \
                                                                                                                 \
-ZMAP_FUN_ATTRIBUTES const ValT* zmap_get_##Name(const ZMAP_TYPENAME_MAP(Name) * const m, const KeyT key) {                                               \
+ZMAP_FUN_ATTRIBUTES  ValT const * zmap_get_##Name( ZMAP_TYPENAME_MAP(Name) const * const m, const KeyT key) {                                               \
         if (m->count == 0) return NULL;                                                                         \
         ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                                                                      \
         size_t idx = hash % m->capacity;                                                                        \
@@ -309,6 +318,22 @@ ZMAP_FUN_ATTRIBUTES const ValT* zmap_get_##Name(const ZMAP_TYPENAME_MAP(Name) * 
             if (s == ZMAP_EMPTY) return NULL;                                                                   \
             if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(m->buckets[idx].entry.key, key) == 0) {                             \
                 return &(m->buckets[idx].entry.value);                                                                  \
+            }                                                                                                   \
+            idx = (idx + 1) % m->capacity;                                                                      \
+        }                                                                                                       \
+        return NULL;                                                                                            \
+    }                                                                                                           \
+                                                                                                                \
+ZMAP_FUN_ATTRIBUTES const ZMAP_TYPENAME_ENTRY(Name)* zmap_get_entry_##Name(const ZMAP_TYPENAME_MAP(Name) * const m, const KeyT key) {                                               \
+        if (m->count == 0) return NULL;                                                                         \
+        ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                                                                      \
+        size_t idx = hash % m->capacity;                                                                        \
+                                                                                                                \
+        for (size_t i = 0; i < m->capacity; i++) {                                                              \
+            zmap_state s = m->buckets[idx].state;                                                               \
+            if (s == ZMAP_EMPTY) return NULL;                                                                   \
+            if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(m->buckets[idx].entry.key, key) == 0) {                             \
+                return &(m->buckets[idx].entry);                                                                  \
             }                                                                                                   \
             idx = (idx + 1) % m->capacity;                                                                      \
         }                                                                                                       \
@@ -355,3 +380,8 @@ ZMAP_FUN_ATTRIBUTES void zmap_clear_##Name(ZMAP_TYPENAME_MAP(Name) *m) {        
 #define ZMAP_DEFINE_AND_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name) \
     ZMAP_DEFINE_MAP_TYPE(KeyT, KeyName, ValT, Name)                   \
     ZMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)
+
+#ifdef __cplusplus
+//extern "C" {
+}
+#endif
