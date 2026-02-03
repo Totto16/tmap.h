@@ -1,10 +1,10 @@
 
 
-#include "./zmap.h"
+#include "./tmap.h"
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_default_hash(const void *key, size_t len)
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_default_hash(const void *key, size_t len)
 {
-    ZmapHashType hash = 2166136261u;
+    TmapHashType hash = 2166136261u;
     const uint8_t *data = (const uint8_t *)key;
     for (size_t i = 0; i < len; i++)
     {
@@ -48,7 +48,7 @@ static size_t stbds_hash_string(const char * str, size_t seed)
 
 static size_t stbds_hash_seed=0x31415926;
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_stbds_hash_string(const char* str){
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_stbds_hash_string(const char* str){
     return stbds_hash_string(str, stbds_hash_seed);
 }
 
@@ -138,7 +138,7 @@ static size_t stbds_siphash_bytes(const void *p, size_t len, size_t seed)
 #endif
 }
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_stbds_hash_bytes(const void *key, size_t len){
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_stbds_hash_bytes(const void *key, size_t len){
     return stbds_siphash_bytes(key, len,stbds_hash_seed);
 }
 

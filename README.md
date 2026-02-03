@@ -1,6 +1,6 @@
-# zmap.h
+# tmap.h
 
-`zmap.h` provides generic hash maps (dictionaries) for C projects. It uses open addressing with linear probing for high performance and cache efficiency. Unlike typical C map implementations that force `void*` casting or string-only keys, `zmap.h` uses C11 `_Generic` selection to generate fully typed, type-safe implementations for your specific key-value pairs.
+`tmap.h` provides generic hash maps (dictionaries) for C projects. It uses open addressing with linear probing for high performance and cache efficiency. Unlike typical C map implementations that force `void*` casting or string-only keys, `tmap.h` uses C11 `_Generic` selection to generate fully typed, type-safe implementations for your specific key-value pairs.
 
 ## Features
 
@@ -13,14 +13,14 @@
 
 ## Quick Start (Automated)
 
-The easiest way to use `zmap.h` is with the **Z-Scanner** tool, which scans your code and handles the boilerplate for you.
+The easiest way to use `tmap.h` is with the **Z-Scanner** tool, which scans your code and handles the boilerplate for you.
 
 ### 1. Setup
 
-Add `zmap.h` and the `z-core` tools to your project:
+Add `tmap.h` and the `z-core` tools to your project:
 
 ```bash
-# Copy zmap.h to your root or include folder.
+# Copy tmap.h to your root or include folder.
 git submodule add https://github.com/z-libs/z-core.git z-core
 ```
 
@@ -31,13 +31,13 @@ You don't need a separate registry file. Just define the types you need right wh
 ```c
 #include <stdio.h>
 #include <string.h>
-#include "zmap.h"
+#include "tmap.h"
 
 // Define a custom struct if needed.
 typedef struct { int id; } Product;
 
 // Helper functions are required for hashing and comparing keys.
-uint32_t hash_str(char *key)   { return ZMAP_HASH_STR(key); }
+uint32_t hash_str(char *key)   { return TMAP_HASH_STR(key); }
 int      cmp_str(char *a, char *b) { return strcmp(a, b); }
 
 // Request the map types you need.
@@ -67,7 +67,7 @@ int main(void)
 
 ### 3. Build
 
-Run the scanner before compiling. It will create a header that `zmap.h` automatically detects.
+Run the scanner before compiling. It will create a header that `tmap.h` automatically detects.
 
 ```bash
 # Scan your source folder (for example, src/ or .) and output to 'z_registry.h'.
@@ -95,16 +95,16 @@ If you cannot use Python or prefer manual control, you can use the **Registry He
     X(int, float, IntFloat)
 
 // Include Library (AFTER defining the macro).
-#include "zmap.h"
+#include "tmap.h"
 
 #endif
 ```
 
-* Include `"my_maps.h"` instead of `"zmap.h"` in your C files.
+* Include `"my_maps.h"` instead of `"tmap.h"` in your C files.
 
 ## API Reference
 
-`zmap.h` uses C11 `_Generic` to automatically select the correct function implementation based on the map pointer you pass.
+`tmap.h` uses C11 `_Generic` to automatically select the correct function implementation based on the map pointer you pass.
 
 ### Initialization & Management
 
@@ -129,8 +129,8 @@ The library provides built-in hashing helpers you can wrap in your own functions
 
 | Function/Macro | Description |
 | :--- | :--- |
-| `ZMAP_HASH_STR(char *s)` | FNV-1a hash helper for null-terminated C strings. |
-| `ZMAP_HASH_SCALAR(val)` | FNV-1a hash helper for scalar types (`int`, `long`, `float`, etc.). |
+| `TMAP_HASH_STR(char *s)` | FNV-1a hash helper for null-terminated C strings. |
+| `TMAP_HASH_SCALAR(val)` | FNV-1a hash helper for scalar types (`int`, `long`, `float`, etc.). |
 
 ## Extensions (Experimental)
 
@@ -155,13 +155,13 @@ void process_data()
 
 ## Memory Management
 
-By default, `zmap.h` uses the standard C library functions (`malloc`, `calloc`, `free`).
+By default, `tmap.h` uses the standard C library functions (`malloc`, `calloc`, `free`).
 
 However, you can override these to use your own memory subsystem (e.g., **Memory Arenas**, **Pools**, or **Debug Allocators**).
 
 ### First Option: Global Override (Recommended)
 
-To use a custom allocator, define the `Z_` macros **inside your registry header**, immediately before including `zmap.h`.
+To use a custom allocator, define the `Z_` macros **inside your registry header**, immediately before including `tmap.h`.
 
 ```c
 #ifndef MY_MAPS_H
@@ -178,7 +178,7 @@ To use a custom allocator, define the `Z_` macros **inside your registry header*
 #define Z_FREE(p)         my_custom_free(p)
 
 // Then include the library.
-#include "zmap.h"
+#include "tmap.h"
 
 // ... Register types ...
 
@@ -196,7 +196,7 @@ If you need different allocators for different containers (e.g., an Arena for Ma
 #define Z_MAP_CALLOC(n, sz)  arena_alloc_zero(dict_arena, (n) * (sz))
 #define Z_MAP_FREE(p)        /* no-op for linear arena */
 
-#include "zmap.h"
+#include "tmap.h"
 #include "zvec.h" // zvec will still use standard malloc!
 ```
 

@@ -1,5 +1,5 @@
 /*
- * zmap.h
+ * tmap.h
  *
  * This file is part of the z-libs collection: https://github.com/z-libs
  * Licensed under the MIT License.
@@ -26,18 +26,18 @@ extern "C" {
 
 // Return Codes.
 typedef enum : bool {
-  ZmapResultErr = false,
-  ZmapResultOk = true,
-} ZmapResult;
+  TmapResultErr = false,
+  TmapResultOk = true,
+} TmapResult;
 
-#define ZMAP_WOULD_OVERWRITE ((void *)(1))
-#define ZMAP_NO_ELEMENT_HERE ((void *)(2))
+#define TMAP_WOULD_OVERWRITE ((void *)(1))
+#define TMAP_NO_ELEMENT_HERE ((void *)(2))
 
 typedef enum : uint8_t {
-  ZmapInsertResultOk = 0,
-  ZmapInsertResultErr = 1,
-  ZmapInsertResultWouldOverwrite = 2
-} ZmapInsertResult;
+  TmapInsertResultOk = 0,
+  TmapInsertResultErr = 1,
+  TmapInsertResultWouldOverwrite = 2
+} TmapInsertResult;
 
 // Memory Macros.
 // If the user hasn't defined their own allocator, use the standard one.
@@ -80,175 +80,175 @@ typedef enum : uint8_t {
 #endif
 
 // maybe some visibility things later, but I just removed the
-// ZMAP_FUN_ATTRIBUTES
-#define ZMAP_FUN_ATTRIBUTES
+// TMAP_FUN_ATTRIBUTES
+#define TMAP_FUN_ATTRIBUTES
 
-typedef size_t ZmapHashType;
+typedef size_t TmapHashType;
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_default_hash(const void *key, size_t len);
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_default_hash(const void *key, size_t len);
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_stbds_hash_string(const char *str);
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_stbds_hash_string(const char *str);
 
-ZMAP_FUN_ATTRIBUTES ZmapHashType zmap_stbds_hash_bytes(const void *key,
+TMAP_FUN_ATTRIBUTES TmapHashType tmap_stbds_hash_bytes(const void *key,
                                                        size_t len);
 
-typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
+typedef enum { TMAP_EMPTY = 0, TMAP_OCCUPIED, TMAP_DELETED } tmap_state;
 
-#define ZMAP_HASH_SCALAR(k) zmap_default_hash(&(k), sizeof(k))
-#define ZMAP_HASH_STR(k) zmap_stbds_hash_string(k)
-#define ZMAP_HASH_BYTES(start, len) zmap_stbds_hash_bytes((start), len)
+#define TMAP_HASH_SCALAR(k) tmap_default_hash(&(k), sizeof(k))
+#define TMAP_HASH_STR(k) tmap_stbds_hash_string(k)
+#define TMAP_HASH_BYTES(start, len) tmap_stbds_hash_bytes((start), len)
 
-#define ZMAP_HASH_FUNC_NAME(KeyName) zmap_hash_type_impl_##KeyName
+#define TMAP_HASH_FUNC_NAME(KeyName) tmap_hash_type_impl_##KeyName
 
-#define ZMAP_COMPARE_FUNC_NAME(KeyName) zmap_compare_type_impl_##KeyName
+#define TMAP_COMPARE_FUNC_NAME(KeyName) tmap_compare_type_impl_##KeyName
 
-#define ZMAP_HASH_FUNC_SIG(KeyT, KeyName)                                      \
-  ZMAP_FUN_ATTRIBUTES ZmapHashType ZMAP_HASH_FUNC_NAME(KeyName)(const KeyT key)
+#define TMAP_HASH_FUNC_SIG(KeyT, KeyName)                                      \
+  TMAP_FUN_ATTRIBUTES TmapHashType TMAP_HASH_FUNC_NAME(KeyName)(const KeyT key)
 
-#define ZMAP_COMPARE_FUNC_SIG(KeyT, KeyName)                                   \
-  ZMAP_FUN_ATTRIBUTES int ZMAP_COMPARE_FUNC_NAME(KeyName)(const KeyT key1,     \
+#define TMAP_COMPARE_FUNC_SIG(KeyT, KeyName)                                   \
+  TMAP_FUN_ATTRIBUTES int TMAP_COMPARE_FUNC_NAME(KeyName)(const KeyT key1,     \
                                                           const KeyT key2)
 
-#define ZMAP_TYPENAME_ENTRY(TypeName) zmap_entry_##TypeName
+#define TMAP_TYPENAME_ENTRY(TypeName) tmap_entry_##TypeName
 
-#define ZMAP_TYPENAME_BUCKET(TypeName) zmap_bucket_##TypeName
+#define TMAP_TYPENAME_BUCKET(TypeName) tmap_bucket_##TypeName
 
-#define ZMAP_TYPENAME_MAP(TypeName) zmap_##TypeName
+#define TMAP_TYPENAME_MAP(TypeName) tmap_##TypeName
 
-#define ZMAP_DEFINE_MAP_TYPE(KeyT, KeyName, ValT, Name)                        \
+#define TMAP_DEFINE_MAP_TYPE(KeyT, KeyName, ValT, Name)                        \
                                                                                \
   typedef struct {                                                             \
     KeyT key;                                                                  \
     ValT value;                                                                \
-  } ZMAP_TYPENAME_ENTRY(Name);                                                 \
+  } TMAP_TYPENAME_ENTRY(Name);                                                 \
                                                                                \
   typedef struct {                                                             \
-    ZMAP_TYPENAME_ENTRY(Name) entry;                                           \
-    zmap_state state;                                                          \
-  } ZMAP_TYPENAME_BUCKET(Name);                                                \
+    TMAP_TYPENAME_ENTRY(Name) entry;                                           \
+    tmap_state state;                                                          \
+  } TMAP_TYPENAME_BUCKET(Name);                                                \
                                                                                \
   typedef struct {                                                             \
-    ZMAP_TYPENAME_BUCKET(Name) * buckets;                                      \
+    TMAP_TYPENAME_BUCKET(Name) * buckets;                                      \
     size_t capacity;                                                           \
     size_t count;                                                              \
     size_t occupied;                                                           \
-  } ZMAP_TYPENAME_MAP(Name);                                                   \
+  } TMAP_TYPENAME_MAP(Name);                                                   \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_free_##Name(ZMAP_TYPENAME_MAP(Name) * m);      \
+  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(TMAP_TYPENAME_MAP(Name) * m);      \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZMAP_TYPENAME_MAP(Name)                    \
-      zmap_init_##Name(void);                                                  \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_TYPENAME_MAP(Name)                    \
+      tmap_init_##Name(void);                                                  \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZmapResult zmap_resize_##Name(             \
-      ZMAP_TYPENAME_MAP(Name) * m, size_t new_cap);                            \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TmapResult tmap_resize_##Name(             \
+      TMAP_TYPENAME_MAP(Name) * m, size_t new_cap);                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ValT *zmap_insert_slot_##Name(             \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key, bool allow_overwrite);            \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] ValT *tmap_insert_slot_##Name(             \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key, bool allow_overwrite);            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ZmapInsertResult zmap_insert_##Name(       \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val,                   \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TmapInsertResult tmap_insert_##Name(       \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val,                   \
       bool allow_overwrite);                                                   \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] inline ValT *zmap_put_slot_##Name(         \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key) {                                 \
-    return zmap_insert_slot_##Name(m, key, true);                              \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] inline ValT *tmap_put_slot_##Name(         \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key) {                                 \
+    return tmap_insert_slot_##Name(m, key, true);                              \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] inline ZmapResult zmap_put_##Name(         \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val) {                 \
-    const ZmapInsertResult result = zmap_insert_##Name(m, key, val, true);     \
-    return result == ZmapInsertResultOk ? ZmapResultOk : ZmapResultErr;        \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] inline TmapResult tmap_put_##Name(         \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val) {                 \
+    const TmapInsertResult result = tmap_insert_##Name(m, key, val, true);     \
+    return result == TmapInsertResultOk ? TmapResultOk : TmapResultErr;        \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ValT *zmap_get_mut_##Name(                 \
-      ZMAP_TYPENAME_MAP(Name) * m, const KeyT key);                            \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] ValT *tmap_get_mut_##Name(                 \
+      TMAP_TYPENAME_MAP(Name) * m, const KeyT key);                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] ValT const *zmap_get_##Name(               \
-      const ZMAP_TYPENAME_MAP(Name) * m, const KeyT key);                      \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] ValT const *tmap_get_##Name(               \
+      const TMAP_TYPENAME_MAP(Name) * m, const KeyT key);                      \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ZMAP_TYPENAME_ENTRY(Name) *          \
-      zmap_get_entry_##Name(const ZMAP_TYPENAME_MAP(Name) * m,                 \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] const TMAP_TYPENAME_ENTRY(Name) *          \
+      tmap_get_entry_##Name(const TMAP_TYPENAME_MAP(Name) * m,                 \
                             const KeyT key);                                   \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ZMAP_TYPENAME_ENTRY(Name) *          \
-      zmap_get_entry_at_##Name(const ZMAP_TYPENAME_MAP(Name) * m,              \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] const TMAP_TYPENAME_ENTRY(Name) *          \
+      tmap_get_entry_at_##Name(const TMAP_TYPENAME_MAP(Name) * m,              \
                                size_t index);                                  \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_remove_##Name(ZMAP_TYPENAME_MAP(Name) * m,     \
+  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(TMAP_TYPENAME_MAP(Name) * m,     \
                                               const KeyT key);                 \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_clear_##Name(ZMAP_TYPENAME_MAP(Name) * m);     \
+  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * m);     \
                                                                                \
-  ZMAP_HASH_FUNC_SIG(KeyT, KeyName);                                           \
+  TMAP_HASH_FUNC_SIG(KeyT, KeyName);                                           \
                                                                                \
-  ZMAP_COMPARE_FUNC_SIG(KeyT, KeyName);
+  TMAP_COMPARE_FUNC_SIG(KeyT, KeyName);
 
-#define ZMAP_ASSERT_SHOULD_USE_INSERT(val)                                     \
+#define TMAP_ASSERT_SHOULD_USE_INSERT(val)                                     \
   STATIC_ASSERT(sizeof(val) <= 8, "only small values should use insert, use "  \
                                   "insert slot for larger ones instead!")
 
-#define ZMAP_ASSERT_SHOULD_USE_INSERT_SLOT(val)                                \
+#define TMAP_ASSERT_SHOULD_USE_INSERT_SLOT(val)                                \
   STATIC_ASSERT(sizeof(val) > 8, "only big values should use insert slot, "    \
                                  "use insert for smaller ones instead!")
 
-#define ZMAP_PUT(Name, Map, Key, Value) zmap_put_##Name(Map, Key, Value)
-#define ZMAP_PUT_SLOT(Name, Map, Key) zmap_put_slot_##Name(Map, Key)
-#define ZMAP_INSERT(Name, Map, Key, Value, AllowOverwrite)                     \
-  zmap_insert_##Name(Map, Key, Value, AllowOverwrite)
-#define ZMAP_INSERT_SLOT(Name, Map, Key, AllowOverwrite)                       \
-  zmap_insert_slot_##Name(Map, Key, AllowOverwrite)
-#define ZMAP_GET(Name, Map, Key) zmap_get_##Name(Map, Key)
-#define ZMAP_GET_ENTRY(Name, Map, Key) zmap_get_entry_##Name(Map, Key)
-#define ZMAP_GET_MUT(Name, Map, Key) zmap_get_mut_##Name(Map, Key)
-#define ZMAP_GET_ENTRY_AT(Name, Map, Index) zmap_get_entry_at_##Name(Map, Index)
-#define ZMAP_REM(Name, Map, Key) zmap_remove_##Name(Map, Key)
-#define ZMAP_FREE(Name, Map) zmap_free_##Name(Map)
-#define ZMAP_CLEAR(Name, Map) zmap_clear_##Name(Map)
+#define TMAP_PUT(Name, Map, Key, Value) tmap_put_##Name(Map, Key, Value)
+#define TMAP_PUT_SLOT(Name, Map, Key) tmap_put_slot_##Name(Map, Key)
+#define TMAP_INSERT(Name, Map, Key, Value, AllowOverwrite)                     \
+  tmap_insert_##Name(Map, Key, Value, AllowOverwrite)
+#define TMAP_INSERT_SLOT(Name, Map, Key, AllowOverwrite)                       \
+  tmap_insert_slot_##Name(Map, Key, AllowOverwrite)
+#define TMAP_GET(Name, Map, Key) tmap_get_##Name(Map, Key)
+#define TMAP_GET_ENTRY(Name, Map, Key) tmap_get_entry_##Name(Map, Key)
+#define TMAP_GET_MUT(Name, Map, Key) tmap_get_mut_##Name(Map, Key)
+#define TMAP_GET_ENTRY_AT(Name, Map, Index) tmap_get_entry_at_##Name(Map, Index)
+#define TMAP_REM(Name, Map, Key) tmap_remove_##Name(Map, Key)
+#define TMAP_FREE(Name, Map) tmap_free_##Name(Map)
+#define TMAP_CLEAR(Name, Map) tmap_clear_##Name(Map)
 
-#define ZMAP_INIT(Name) zmap_init_##Name()
+#define TMAP_INIT(Name) tmap_init_##Name()
 
-#define ZMAP_EMPTY_MAP(TypeName)                                               \
-  ((ZMAP_TYPENAME_MAP(TypeName)){                                              \
+#define TMAP_EMPTY_MAP(TypeName)                                               \
+  ((TMAP_TYPENAME_MAP(TypeName)){                                              \
       .buckets = NULL, .capacity = 0, .count = 0, .occupied = 0})
 
-#define ZMAP_SIZE(v) (v).count
-#define ZMAP_IS_EMPTY(v) ((v).count == 0)
-#define ZMAP_CAPACITY(v) (v).capacity
-#define ZMAP_OCCUPIED_COUNT(v) (v).occupied
+#define TMAP_SIZE(v) (v).count
+#define TMAP_IS_EMPTY(v) ((v).count == 0)
+#define TMAP_CAPACITY(v) (v).capacity
+#define TMAP_OCCUPIED_COUNT(v) (v).occupied
 
 #if defined(Z_HAS_CLEANUP) && Z_HAS_CLEANUP
-#define zmap_autofree(Name) Z_CLEANUP(map_free_##Name) ZMAP_TYPENAME_MAP(Name)
+#define tmap_autofree(Name) Z_CLEANUP(map_free_##Name) TMAP_TYPENAME_MAP(Name)
 #endif
 
-#define ZMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)                     \
+#define TMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)                     \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_free_##Name(ZMAP_TYPENAME_MAP(Name) * m) {     \
+  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(TMAP_TYPENAME_MAP(Name) * m) {     \
     Z_MAP_FREE(m->buckets);                                                    \
-    *m = (ZMAP_TYPENAME_MAP(Name)){0};                                         \
+    *m = (TMAP_TYPENAME_MAP(Name)){0};                                         \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ZMAP_TYPENAME_MAP(Name) zmap_init_##Name(void) {         \
-    return (ZMAP_TYPENAME_MAP(Name)){                                          \
+  TMAP_FUN_ATTRIBUTES TMAP_TYPENAME_MAP(Name) tmap_init_##Name(void) {         \
+    return (TMAP_TYPENAME_MAP(Name)){                                          \
         .buckets = NULL, .capacity = 0, .count = 0, .occupied = 0};            \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ZmapResult zmap_resize_##Name(                           \
-      ZMAP_TYPENAME_MAP(Name) * m, size_t new_cap) {                           \
+  TMAP_FUN_ATTRIBUTES TmapResult tmap_resize_##Name(                           \
+      TMAP_TYPENAME_MAP(Name) * m, size_t new_cap) {                           \
     if (new_cap < m->occupied) {                                               \
-      return ZmapResultErr;                                                    \
+      return TmapResultErr;                                                    \
     }                                                                          \
-    ZMAP_TYPENAME_BUCKET(Name) *new_buckets =                                  \
-        Z_MAP_CALLOC(new_cap, sizeof(ZMAP_TYPENAME_BUCKET(Name)));             \
+    TMAP_TYPENAME_BUCKET(Name) *new_buckets =                                  \
+        Z_MAP_CALLOC(new_cap, sizeof(TMAP_TYPENAME_BUCKET(Name)));             \
     if (!new_buckets) {                                                        \
-      return ZmapResultErr;                                                    \
+      return TmapResultErr;                                                    \
     };                                                                         \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      if (m->buckets[i].state == ZMAP_OCCUPIED) {                              \
-        ZmapHashType hash =                                                    \
-            ZMAP_HASH_FUNC_NAME(KeyName)(m->buckets[i].entry.key);             \
+      if (m->buckets[i].state == TMAP_OCCUPIED) {                              \
+        TmapHashType hash =                                                    \
+            TMAP_HASH_FUNC_NAME(KeyName)(m->buckets[i].entry.key);             \
         size_t idx = hash % new_cap;                                           \
-        while (new_buckets[idx].state == ZMAP_OCCUPIED) {                      \
+        while (new_buckets[idx].state == TMAP_OCCUPIED) {                      \
           idx = (idx + 1) % new_cap;                                           \
         }                                                                      \
         new_buckets[idx] = m->buckets[i];                                      \
@@ -258,42 +258,42 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     m->buckets = new_buckets;                                                  \
     m->capacity = new_cap;                                                     \
     m->occupied = m->count;                                                    \
-    return ZmapResultOk;                                                       \
+    return TmapResultOk;                                                       \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ValT *zmap_insert_slot_##Name(                           \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key, bool allow_overwrite) {           \
+  TMAP_FUN_ATTRIBUTES ValT *tmap_insert_slot_##Name(                           \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key, bool allow_overwrite) {           \
     if (m->occupied >= m->capacity * 0.75) {                                   \
       size_t new_cap = m->capacity == 0 ? 16 : m->capacity * 2;                \
-      if (zmap_resize_##Name(m, new_cap) != ZmapResultOk) {                    \
+      if (tmap_resize_##Name(m, new_cap) != TmapResultOk) {                    \
         return NULL;                                                           \
       }                                                                        \
     }                                                                          \
-    ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                     \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
     size_t idx = hash % m->capacity;                                           \
     size_t deleted_idx = SIZE_MAX;                                             \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      zmap_state s = m->buckets[idx].state;                                    \
-      if (s == ZMAP_EMPTY) {                                                   \
+      tmap_state s = m->buckets[idx].state;                                    \
+      if (s == TMAP_EMPTY) {                                                   \
         if (deleted_idx != SIZE_MAX)                                           \
           idx = deleted_idx;                                                   \
         else                                                                   \
           m->occupied++;                                                       \
-        m->buckets[idx] = (ZMAP_TYPENAME_BUCKET(Name)){                        \
+        m->buckets[idx] = (TMAP_TYPENAME_BUCKET(Name)){                        \
             .entry =                                                           \
-                (ZMAP_TYPENAME_ENTRY(Name)){.key = key, .value = (ValT){}},    \
-            .state = ZMAP_OCCUPIED};                                           \
+                (TMAP_TYPENAME_ENTRY(Name)){.key = key, .value = (ValT){}},    \
+            .state = TMAP_OCCUPIED};                                           \
         m->count++;                                                            \
         return &(m->buckets[idx].entry.value);                                 \
       }                                                                        \
-      if (s == ZMAP_DELETED) {                                                 \
+      if (s == TMAP_DELETED) {                                                 \
         if (deleted_idx == SIZE_MAX)                                           \
           deleted_idx = idx;                                                   \
-      } else if (ZMAP_COMPARE_FUNC_NAME(KeyName)(m->buckets[idx].entry.key,    \
+      } else if (TMAP_COMPARE_FUNC_NAME(KeyName)(m->buckets[idx].entry.key,    \
                                                  key) == 0) {                  \
         if (!allow_overwrite) {                                                \
-          return ZMAP_WOULD_OVERWRITE;                                         \
+          return TMAP_WOULD_OVERWRITE;                                         \
         }                                                                      \
         return &(m->buckets[idx].entry.value);                                 \
       }                                                                        \
@@ -302,32 +302,32 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     return NULL;                                                               \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ZmapInsertResult zmap_insert_##Name(                     \
-      ZMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val,                   \
+  TMAP_FUN_ATTRIBUTES TmapInsertResult tmap_insert_##Name(                     \
+      TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val,                   \
       bool allow_overwrite) {                                                  \
-    ValT *slot = zmap_insert_slot_##Name(m, key, allow_overwrite);             \
+    ValT *slot = tmap_insert_slot_##Name(m, key, allow_overwrite);             \
     if (slot == NULL) {                                                        \
-      return ZmapInsertResultErr;                                              \
+      return TmapInsertResultErr;                                              \
     }                                                                          \
-    if (slot == ZMAP_WOULD_OVERWRITE) {                                        \
-      return ZmapInsertResultWouldOverwrite;                                   \
+    if (slot == TMAP_WOULD_OVERWRITE) {                                        \
+      return TmapInsertResultWouldOverwrite;                                   \
     }                                                                          \
     *slot = val;                                                               \
-    return ZmapInsertResultOk;                                                 \
+    return TmapInsertResultOk;                                                 \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ValT *zmap_get_mut_##Name(ZMAP_TYPENAME_MAP(Name) * m,   \
+  TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(TMAP_TYPENAME_MAP(Name) * m,   \
                                                 const KeyT key) {              \
     if (m->count == 0)                                                         \
       return NULL;                                                             \
-    ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                     \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
     size_t idx = hash % m->capacity;                                           \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      zmap_state s = m->buckets[idx].state;                                    \
-      if (s == ZMAP_EMPTY)                                                     \
+      tmap_state s = m->buckets[idx].state;                                    \
+      if (s == TMAP_EMPTY)                                                     \
         return NULL;                                                           \
-      if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(               \
+      if (s == TMAP_OCCUPIED && TMAP_COMPARE_FUNC_NAME(KeyName)(               \
                                     m->buckets[idx].entry.key, key) == 0) {    \
         return &(m->buckets[idx].entry.value);                                 \
       }                                                                        \
@@ -336,18 +336,18 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     return NULL;                                                               \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES ValT const *zmap_get_##Name(                             \
-      ZMAP_TYPENAME_MAP(Name) const *const m, const KeyT key) {                \
+  TMAP_FUN_ATTRIBUTES ValT const *tmap_get_##Name(                             \
+      TMAP_TYPENAME_MAP(Name) const *const m, const KeyT key) {                \
     if (m->count == 0)                                                         \
       return NULL;                                                             \
-    ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                     \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
     size_t idx = hash % m->capacity;                                           \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      zmap_state s = m->buckets[idx].state;                                    \
-      if (s == ZMAP_EMPTY)                                                     \
+      tmap_state s = m->buckets[idx].state;                                    \
+      if (s == TMAP_EMPTY)                                                     \
         return NULL;                                                           \
-      if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(               \
+      if (s == TMAP_OCCUPIED && TMAP_COMPARE_FUNC_NAME(KeyName)(               \
                                     m->buckets[idx].entry.key, key) == 0) {    \
         return &(m->buckets[idx].entry.value);                                 \
       }                                                                        \
@@ -356,19 +356,19 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     return NULL;                                                               \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES const ZMAP_TYPENAME_ENTRY(Name) *                        \
-      zmap_get_entry_##Name(const ZMAP_TYPENAME_MAP(Name) *const m,            \
+  TMAP_FUN_ATTRIBUTES const TMAP_TYPENAME_ENTRY(Name) *                        \
+      tmap_get_entry_##Name(const TMAP_TYPENAME_MAP(Name) *const m,            \
                             const KeyT key) {                                  \
     if (m->count == 0)                                                         \
       return NULL;                                                             \
-    ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                     \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
     size_t idx = hash % m->capacity;                                           \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      zmap_state s = m->buckets[idx].state;                                    \
-      if (s == ZMAP_EMPTY)                                                     \
+      tmap_state s = m->buckets[idx].state;                                    \
+      if (s == TMAP_EMPTY)                                                     \
         return NULL;                                                           \
-      if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(               \
+      if (s == TMAP_OCCUPIED && TMAP_COMPARE_FUNC_NAME(KeyName)(               \
                                     m->buckets[idx].entry.key, key) == 0) {    \
         return &(m->buckets[idx].entry);                                       \
       }                                                                        \
@@ -377,36 +377,36 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     return NULL;                                                               \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES [[nodiscard]] const ZMAP_TYPENAME_ENTRY(Name) *          \
-      zmap_get_entry_at_##Name(const ZMAP_TYPENAME_MAP(Name) *const m,         \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] const TMAP_TYPENAME_ENTRY(Name) *          \
+      tmap_get_entry_at_##Name(const TMAP_TYPENAME_MAP(Name) *const m,         \
                                size_t index) {                                 \
     if (index >= m->capacity) {                                                \
       return NULL;                                                             \
     }                                                                          \
                                                                                \
-    ZMAP_TYPENAME_BUCKET(Name) *hm_bucket = &(m->buckets[index]);              \
+    TMAP_TYPENAME_BUCKET(Name) *hm_bucket = &(m->buckets[index]);              \
                                                                                \
-    if (hm_bucket->state == ZMAP_OCCUPIED) {                                   \
+    if (hm_bucket->state == TMAP_OCCUPIED) {                                   \
       return &(hm_bucket->entry);                                              \
     }                                                                          \
                                                                                \
-    return ZMAP_NO_ELEMENT_HERE;                                               \
+    return TMAP_NO_ELEMENT_HERE;                                               \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_remove_##Name(ZMAP_TYPENAME_MAP(Name) * m,     \
+  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(TMAP_TYPENAME_MAP(Name) * m,     \
                                               const KeyT key) {                \
     if (m->count == 0)                                                         \
       return;                                                                  \
-    ZmapHashType hash = ZMAP_HASH_FUNC_NAME(KeyName)(key);                     \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
     size_t idx = hash % m->capacity;                                           \
                                                                                \
     for (size_t i = 0; i < m->capacity; i++) {                                 \
-      zmap_state s = m->buckets[idx].state;                                    \
-      if (s == ZMAP_EMPTY)                                                     \
+      tmap_state s = m->buckets[idx].state;                                    \
+      if (s == TMAP_EMPTY)                                                     \
         return;                                                                \
-      if (s == ZMAP_OCCUPIED && ZMAP_COMPARE_FUNC_NAME(KeyName)(               \
+      if (s == TMAP_OCCUPIED && TMAP_COMPARE_FUNC_NAME(KeyName)(               \
                                     m->buckets[idx].entry.key, key) == 0) {    \
-        m->buckets[idx].state = ZMAP_DELETED;                                  \
+        m->buckets[idx].state = TMAP_DELETED;                                  \
         m->count--;                                                            \
         return;                                                                \
       }                                                                        \
@@ -414,17 +414,17 @@ typedef enum { ZMAP_EMPTY = 0, ZMAP_OCCUPIED, ZMAP_DELETED } zmap_state;
     }                                                                          \
   }                                                                            \
                                                                                \
-  ZMAP_FUN_ATTRIBUTES void zmap_clear_##Name(ZMAP_TYPENAME_MAP(Name) * m) {    \
+  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * m) {    \
     if (m->capacity > 0) {                                                     \
-      memset(m->buckets, 0, m->capacity * sizeof(ZMAP_TYPENAME_BUCKET(Name))); \
+      memset(m->buckets, 0, m->capacity * sizeof(TMAP_TYPENAME_BUCKET(Name))); \
     }                                                                          \
     m->count = 0;                                                              \
     m->occupied = 0;                                                           \
   }
 
-#define ZMAP_DEFINE_AND_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)          \
-  ZMAP_DEFINE_MAP_TYPE(KeyT, KeyName, ValT, Name)                              \
-  ZMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)
+#define TMAP_DEFINE_AND_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)          \
+  TMAP_DEFINE_MAP_TYPE(KeyT, KeyName, ValT, Name)                              \
+  TMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)
 
 #ifdef __cplusplus
 // extern "C" {
