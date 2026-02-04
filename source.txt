@@ -1,2 +1,2 @@
-Commit used: https://github.com/z-libs/tmap.h/commit/743b276cfccf65b8f4a07aa1175c12fc5359b525
+Commit used: https://github.com/z-libs/tmap.h/commit/d153fb0ffbcb2992e8ff8382e4f9462501c63bd6
 Master: https://github.com/z-libs/tmap.h

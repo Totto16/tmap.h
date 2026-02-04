@@ -119,7 +119,7 @@ If you cannot use Python or prefer manual control, you can use the **Registry He
 
 | Macro | Description |
 | :--- | :--- |
-| `map_put(m, key, val)` | Inserts the key-value pair. If the key exists, updates the value. Returns `Z_OK` or `Z_ERR`. |
+| `map_put(m, key, val)` | Inserts the key-value pair. If the key exists, updates the value. Returns `T_OK` or `T_ERR`. |
 | `map_get(m, key)` | Returns a **pointer** to the value associated with `key`, or `NULL` if not found. |
 | `map_remove(m, key)` | Removes the item associated with `key`. Does nothing if the key is missing. |
 
@@ -151,7 +151,7 @@ void process_data()
 }
 ```
 
-> **Disable Extensions:** To force standard compliance and disable these extensions, define `Z_NO_EXTENSIONS` before including the library.
+> **Disable Extensions:** To force standard compliance and disable these extensions, define `T_NO_EXTENSIONS` before including the library.
 
 ## Memory Management
 
@@ -161,7 +161,7 @@ However, you can override these to use your own memory subsystem (e.g., **Memory
 
 ### First Option: Global Override (Recommended)
 
-To use a custom allocator, define the `Z_` macros **inside your registry header**, immediately before including `tmap.h`.
+To use a custom allocator, define the `T_` macros **inside your registry header**, immediately before including `tmap.h`.
 
 ```c
 #ifndef MY_MAPS_H
@@ -172,10 +172,10 @@ To use a custom allocator, define the `Z_` macros **inside your registry header*
 
 // IMPORTANT: Override all four to prevent mixing allocators.
 // (Maps use calloc for buckets to detect empty slots).
-#define Z_MALLOC(sz)      my_custom_alloc(sz)
-#define Z_CALLOC(n, sz)   my_custom_calloc(n, sz)
-#define Z_REALLOC(n, sz)  my_custom_realloc(p, sz)
-#define Z_FREE(p)         my_custom_free(p)
+#define T_MALLOC(sz)      my_custom_alloc(sz)
+#define T_CALLOC(n, sz)   my_custom_calloc(n, sz)
+#define T_REALLOC(n, sz)  my_custom_realloc(p, sz)
+#define T_FREE(p)         my_custom_free(p)
 
 // Then include the library.
 #include "tmap.h"
@@ -189,12 +189,12 @@ To use a custom allocator, define the `Z_` macros **inside your registry header*
 
 ### Second Option: Library-Specific Override (Advanced)
 
-If you need different allocators for different containers (e.g., an Arena for Maps but the Heap for Vectors), you can use the library-specific macros. These take priority over the global `Z_` macros.
+If you need different allocators for different containers (e.g., an Arena for Maps but the Heap for Vectors), you can use the library-specific macros. These take priority over the global `T_` macros.
 
 ```c
 // Example: Maps use a Dict Arena, everything else uses standard malloc.
-#define Z_MAP_CALLOC(n, sz)  arena_alloc_zero(dict_arena, (n) * (sz))
-#define Z_MAP_FREE(p)        /* no-op for linear arena */
+#define T_MAP_CALLOC(n, sz)  arena_alloc_zero(dict_arena, (n) * (sz))
+#define T_MAP_FREE(p)        /* no-op for linear arena */
 
 #include "tmap.h"
 #include "zvec.h" // zvec will still use standard malloc!
