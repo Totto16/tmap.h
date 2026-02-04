@@ -85,16 +85,21 @@ typedef enum : uint8_t {
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) ||              \
     defined(__cplusplus)
 #define STATIC_ASSERT(check, message) static_assert(check, message)
+#define MAYBE_UNUSED [[maybe_unused]]
 #elif __STDC_VERSION__ < 201112L
+#define MAYBE_UNUSED __attribute__((unused))
 // empty, as not supported
 #define STATIC_ASSERT(check, message)
 #else
+#define MAYBE_UNUSED [[maybe_unused]]
 #define STATIC_ASSERT(check, message) _Static_assert(check, message)
 #endif
 
 // maybe some visibility things later, but I just removed the
 // TMAP_FUN_ATTRIBUTES
 #define TMAP_FUN_ATTRIBUTES
+
+#define TMAP_STATIC_INLINE MAYBE_UNUSED static inline
 
 typedef size_t TmapHashType;
 
@@ -177,13 +182,13 @@ typedef enum {
       TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val,                   \
       bool allow_overwrite);                                                   \
                                                                                \
-  TMAP_FUN_ATTRIBUTES [[nodiscard]] static inline ValT *tmap_put_slot_##Name(  \
-      TMAP_TYPENAME_MAP(Name) * m, KeyT key) {                                 \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE ValT *                  \
+  tmap_put_slot_##Name(TMAP_TYPENAME_MAP(Name) * m, KeyT key) {                \
     return tmap_insert_slot_##Name(m, key, true);                              \
   }                                                                            \
                                                                                \
-  TMAP_FUN_ATTRIBUTES [[nodiscard]] static inline TmapResult tmap_put_##Name(  \
-      TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val) {                 \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE TmapResult              \
+  tmap_put_##Name(TMAP_TYPENAME_MAP(Name) * m, KeyT key, ValT const val) {     \
     const TmapInsertResult result = tmap_insert_##Name(m, key, val, true);     \
     return result == TmapInsertResultOk ? TmapResultOk : TmapResultErr;        \
   }                                                                            \
@@ -207,18 +212,19 @@ typedef enum {
   TMAP_FUN_ATTRIBUTES [[nodiscard]] bool tmap_iter_next_##Name(                \
       TMAP_TYPENAME_ITER(Name) * it, TMAP_TYPENAME_ENTRY(Name) * out_entry);   \
                                                                                \
-  TMAP_FUN_ATTRIBUTES [[nodiscard]] static inline bool tmap_contains_##Name(   \
-      TMAP_TYPENAME_MAP(Name) const *const m, const KeyT key) {                \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE bool                    \
+  tmap_contains_##Name(TMAP_TYPENAME_MAP(Name) const *const m,                 \
+                       const KeyT key) {                                       \
     return tmap_get_##Name(m, key) != NULL;                                    \
   }                                                                            \
                                                                                \
-  TMAP_FUN_ATTRIBUTES [[nodiscard]] static inline size_t tmap_size_##Name(     \
-      TMAP_TYPENAME_MAP(Name) const *const m) {                                \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE size_t                  \
+  tmap_size_##Name(TMAP_TYPENAME_MAP(Name) const *const m) {                   \
     return m->count;                                                           \
   }                                                                            \
                                                                                \
-  TMAP_FUN_ATTRIBUTES [[nodiscard]] static inline bool tmap_is_empty_##Name(   \
-      TMAP_TYPENAME_MAP(Name) const *const m) {                                \
+  TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE bool                    \
+  tmap_is_empty_##Name(TMAP_TYPENAME_MAP(Name) const *const m) {               \
     return m->count == 0;                                                      \
   }                                                                            \
                                                                                \
