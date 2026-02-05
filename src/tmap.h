@@ -101,6 +101,8 @@ typedef enum : uint8_t {
 
 #define TMAP_STATIC_INLINE MAYBE_UNUSED static inline
 
+#define TVEC_PRAGMA_IN_MACRO(x) _Pragma(#x)
+
 typedef size_t TmapHashType;
 
 TMAP_FUN_ATTRIBUTES TmapHashType tmap_default_hash(const void *key, size_t len);
@@ -230,9 +232,13 @@ typedef enum {
                                                                                \
   TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * m);     \
                                                                                \
+  TVEC_PRAGMA_IN_MACRO(GCC diagnostic push)                                    \
+  TVEC_PRAGMA_IN_MACRO(GCC diagnostic ignored "-Wredundant-decls")             \
+                                                                               \
   TMAP_HASH_FUNC_SIG(KeyT, KeyName);                                           \
                                                                                \
-  TMAP_COMPARE_FUNC_SIG(KeyT, KeyName);
+  TMAP_COMPARE_FUNC_SIG(KeyT, KeyName);                                        \
+  TVEC_PRAGMA_IN_MACRO(GCC diagnostic pop)
 
 #define TMAP_ASSERT_SHOULD_USE_INSERT(val)                                     \
   STATIC_ASSERT(sizeof(val) <= 8, "only small values should use insert, use "  \
