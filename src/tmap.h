@@ -275,235 +275,239 @@ typedef enum {
                                  .occupied = 0,                                \
                                  .threshold = 0})
 
-#define TMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)                     \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(TMAP_TYPENAME_MAP(Name) * map) {   \
-    T_MAP_FREE(map->buckets);                                                  \
-    *map = (TMAP_TYPENAME_MAP(Name)){0};                                       \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES TMAP_TYPENAME_MAP(Name) tmap_init_##Name(void) {         \
-    return (TMAP_TYPENAME_MAP(Name)){.buckets = NULL,                          \
-                                     .capacity = 0,                            \
-                                     .count = 0,                               \
-                                     .occupied = 0,                            \
-                                     .threshold = 0};                          \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES TmapResult tmap_resize_##Name(                           \
-      TMAP_TYPENAME_MAP(Name) * map, size_t new_cap) {                         \
-    if (new_cap < map->occupied) {                                             \
-      return TmapResultErr;                                                    \
-    }                                                                          \
-    TMAP_TYPENAME_BUCKET(Name) *new_buckets = (TMAP_TYPENAME_BUCKET(           \
-        Name) *)T_MAP_CALLOC(new_cap, sizeof(TMAP_TYPENAME_BUCKET(Name)));     \
-    if (!new_buckets) {                                                        \
-      return TmapResultErr;                                                    \
-    };                                                                         \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      if (map->buckets[i].state == tmap_state_occupied) {                      \
-        TmapHashType hash =                                                    \
-            TMAP_HASH_FUNC_NAME(KeyName)(map->buckets[i].entry.key);           \
-        size_t idx = hash % new_cap;                                           \
-        while (new_buckets[idx].state == tmap_state_occupied) {                \
-          idx = (idx + 1) % new_cap;                                           \
-        }                                                                      \
-        new_buckets[idx] = map->buckets[i];                                    \
-      }                                                                        \
-    }                                                                          \
-    T_MAP_FREE(map->buckets);                                                  \
-    map->buckets = new_buckets;                                                \
-    map->capacity = new_cap;                                                   \
-    map->occupied = map->count; /* Deleted items are purged during resize. */  \
-    map->threshold = (size_t)(new_cap * TMAP_LOAD_FACTOR);                     \
-    return TmapResultOk;                                                       \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES ValT *tmap_insert_slot_##Name(                           \
-      TMAP_TYPENAME_MAP(Name) * map, KeyT key, bool allow_overwrite) {         \
-    if (map->occupied >= map->threshold) {                                     \
-      size_t new_cap = T_GROWTH_FACTOR(map->capacity);                         \
-      if (tmap_resize_##Name(map, new_cap) != TmapResultOk) {                  \
-        return NULL;                                                           \
-      }                                                                        \
-    }                                                                          \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
-    size_t idx = hash % map->capacity;                                         \
-    size_t deleted_idx = SIZE_MAX;                                             \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      tmap_state state = map->buckets[idx].state;                              \
-      if (state == tmap_state_empty) {                                         \
-        if (deleted_idx != SIZE_MAX) {                                         \
-          idx = deleted_idx;                                                   \
-        } else {                                                               \
-          map->occupied++;                                                     \
-        }                                                                      \
-        map->buckets[idx] = (TMAP_TYPENAME_BUCKET(Name)){                      \
-            .entry =                                                           \
-                (TMAP_TYPENAME_ENTRY(Name)){.key = key, .value = (ValT){}},    \
-            .state = tmap_state_occupied};                                     \
-        map->count++;                                                          \
-        return &(map->buckets[idx].entry.value);                               \
-      }                                                                        \
-      if (state == tmap_state_deleted) {                                       \
-        if (deleted_idx == SIZE_MAX) {                                         \
-          deleted_idx = idx;                                                   \
-        }                                                                      \
-      } else if (TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key,  \
-                                                 key) == 0) {                  \
-        if (!allow_overwrite) {                                                \
-          return TMAP_WOULD_OVERWRITE;                                         \
-        }                                                                      \
-        return &(map->buckets[idx].entry.value);                               \
-      }                                                                        \
-      idx = (idx + 1) % map->capacity;                                         \
-    }                                                                          \
-    return NULL;                                                               \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES TmapInsertResult tmap_insert_##Name(                     \
-      TMAP_TYPENAME_MAP(Name) * map, KeyT const key, ValT const val,           \
-      bool allow_overwrite) {                                                  \
-    ValT *slot = tmap_insert_slot_##Name(map, key, allow_overwrite);           \
-    if (slot == NULL) {                                                        \
-      return TmapInsertResultErr;                                              \
-    }                                                                          \
-    if (slot == TMAP_WOULD_OVERWRITE) {                                        \
-      return TmapInsertResultWouldOverwrite;                                   \
-    }                                                                          \
-    *slot = val;                                                               \
-    return TmapInsertResultOk;                                                 \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(TMAP_TYPENAME_MAP(Name) * map, \
-                                                const KeyT key) {              \
-    if (map->count == 0) {                                                     \
-      return NULL;                                                             \
-    }                                                                          \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
-    size_t idx = hash % map->capacity;                                         \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      tmap_state state = map->buckets[idx].state;                              \
-      if (state == tmap_state_empty) {                                         \
-        return NULL;                                                           \
-      }                                                                        \
-      if (state == tmap_state_occupied &&                                      \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) == \
-              0) {                                                             \
-        return &(map->buckets[idx].entry.value);                               \
-      }                                                                        \
-      idx = (idx + 1) % map->capacity;                                         \
-    }                                                                          \
-    return NULL;                                                               \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES const TMAP_TYPENAME_ENTRY(Name) *                        \
-      tmap_get_entry_##Name(const TMAP_TYPENAME_MAP(Name) *const map,          \
-                            const KeyT key) {                                  \
-    if (map->count == 0) {                                                     \
-      return NULL;                                                             \
-    }                                                                          \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
-    size_t idx = hash % map->capacity;                                         \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      tmap_state state = map->buckets[idx].state;                              \
-      if (state == tmap_state_empty) {                                         \
-        return NULL;                                                           \
-      }                                                                        \
-      if (state == tmap_state_occupied &&                                      \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) == \
-              0) {                                                             \
-        return &(map->buckets[idx].entry);                                     \
-      }                                                                        \
-      idx = (idx + 1) % map->capacity;                                         \
-    }                                                                          \
-    return NULL;                                                               \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES ValT const *tmap_get_##Name(                             \
-      TMAP_TYPENAME_MAP(Name) const *const map, const KeyT key) {              \
-    if (map->count == 0) {                                                     \
-      return NULL;                                                             \
-    }                                                                          \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
-    size_t idx = hash % map->capacity;                                         \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      tmap_state state = map->buckets[idx].state;                              \
-      if (state == tmap_state_empty) {                                         \
-        return NULL;                                                           \
-      }                                                                        \
-      if (state == tmap_state_occupied &&                                      \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) == \
-              0) {                                                             \
-        return &(map->buckets[idx].entry.value);                               \
-      }                                                                        \
-      idx = (idx + 1) % map->capacity;                                         \
-    }                                                                          \
-    return NULL;                                                               \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(TMAP_TYPENAME_MAP(Name) * map,   \
-                                              const KeyT key) {                \
-    if (map->count == 0) {                                                     \
-      return;                                                                  \
-    }                                                                          \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                     \
-    size_t idx = hash % map->capacity;                                         \
-                                                                               \
-    for (size_t i = 0; i < map->capacity; i++) {                               \
-      tmap_state state = map->buckets[idx].state;                              \
-      if (state == tmap_state_empty)                                           \
-        return;                                                                \
-      if (state == tmap_state_occupied &&                                      \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) == \
-              0) {                                                             \
-        map->buckets[idx].state = tmap_state_deleted;                          \
-        map->count--;                                                          \
-        return;                                                                \
-      }                                                                        \
-      idx = (idx + 1) % map->capacity;                                         \
-    }                                                                          \
-  }                                                                            \
-                                                                               \
-  /* Creates a new iterator for the map. */                                    \
-  TMAP_FUN_ATTRIBUTES TMAP_TYPENAME_ITER(Name)                                 \
-      tmap_iter_init_##Name(TMAP_TYPENAME_MAP(Name) const *const map) {        \
-    return (TMAP_TYPENAME_ITER(Name)){.map = map, .index = 0};                 \
-  }                                                                            \
-                                                                               \
-  /* Advances the iterator. Returns true and writes key/val if a next item     \
-   * exists. */                                                                \
-  TMAP_FUN_ATTRIBUTES bool tmap_iter_next_##Name(                              \
-      TMAP_TYPENAME_ITER(Name) *const iter,                                    \
-      TMAP_TYPENAME_ENTRY(Name) * out_entry) {                                 \
-    if (!iter->map || !iter->map->buckets) {                                   \
-      return false;                                                            \
-    }                                                                          \
-                                                                               \
-    while (iter->index < iter->map->capacity) {                                \
-      size_t i = iter->index++;                                                \
-      if (iter->map->buckets[i].state == tmap_state_occupied) {                \
-        if (out_entry) {                                                       \
-          *out_entry = iter->map->buckets[i].entry;                            \
-        }                                                                      \
-        return true;                                                           \
-      }                                                                        \
-    }                                                                          \
-    return false;                                                              \
-  }                                                                            \
-                                                                               \
-  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * map) {  \
-    if (map->capacity > 0) {                                                   \
-      memset(map->buckets, 0,                                                  \
-             map->capacity * sizeof(TMAP_TYPENAME_BUCKET(Name)));              \
-    }                                                                          \
-    map->count = 0;                                                            \
-    map->occupied = 0;                                                         \
+#define TMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)                            \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(TMAP_TYPENAME_MAP(Name) * map) {          \
+    T_MAP_FREE(map->buckets);                                                         \
+    *map = (TMAP_TYPENAME_MAP(Name)){0};                                              \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES TMAP_TYPENAME_MAP(Name) tmap_init_##Name(void) {                \
+    return (TMAP_TYPENAME_MAP(Name)){.buckets = NULL,                                 \
+                                     .capacity = 0,                                   \
+                                     .count = 0,                                      \
+                                     .occupied = 0,                                   \
+                                     .threshold = 0};                                 \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES TmapResult tmap_resize_##Name(                                  \
+      TMAP_TYPENAME_MAP(Name) * map, size_t new_cap) {                                \
+    if (new_cap < map->occupied) {                                                    \
+      return TmapResultErr;                                                           \
+    }                                                                                 \
+    TMAP_TYPENAME_BUCKET(Name) *new_buckets = (TMAP_TYPENAME_BUCKET(                  \
+        Name) *)T_MAP_CALLOC(new_cap, sizeof(TMAP_TYPENAME_BUCKET(Name)));            \
+    if (!new_buckets) {                                                               \
+      return TmapResultErr;                                                           \
+    };                                                                                \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      if (map->buckets[i].state == tmap_state_occupied) {                             \
+        TmapHashType hash =                                                           \
+            TMAP_HASH_FUNC_NAME(KeyName)(map->buckets[i].entry.key);                  \
+        size_t idx = hash % new_cap;                                                  \
+        while (new_buckets[idx].state == tmap_state_occupied) {                       \
+          idx = (idx + 1) % new_cap;                                                  \
+        }                                                                             \
+        new_buckets[idx] = map->buckets[i];                                           \
+      }                                                                               \
+    }                                                                                 \
+    T_MAP_FREE(map->buckets);                                                         \
+    map->buckets = new_buckets;                                                       \
+    map->capacity = new_cap;                                                          \
+    map->occupied = map->count; /* Deleted items are purged during resize. */         \
+    map->threshold = (size_t)(new_cap * TMAP_LOAD_FACTOR);                            \
+    return TmapResultOk;                                                              \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES ValT *tmap_insert_slot_##Name(                                  \
+      TMAP_TYPENAME_MAP(Name) * map, KeyT key, bool allow_overwrite) {                \
+    if (map->occupied >= map->threshold) {                                            \
+      size_t new_cap = T_GROWTH_FACTOR(map->capacity);                                \
+      if (tmap_resize_##Name(map, new_cap) != TmapResultOk) {                         \
+        return NULL;                                                                  \
+      }                                                                               \
+    }                                                                                 \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    size_t idx = hash % map->capacity;                                                \
+    size_t deleted_idx = SIZE_MAX;                                                    \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      tmap_state state = map->buckets[idx].state;                                     \
+      if (state == tmap_state_empty) {                                                \
+        if (deleted_idx != SIZE_MAX) {                                                \
+          idx = deleted_idx;                                                          \
+        } else {                                                                      \
+          map->occupied++;                                                            \
+        }                                                                             \
+        map->buckets[idx] = (TMAP_TYPENAME_BUCKET(Name)){                             \
+            .entry =                                                                  \
+                (TMAP_TYPENAME_ENTRY(Name)){.key = key, .value = (ValT){}},           \
+            .state = tmap_state_occupied};                                            \
+        map->count++;                                                                 \
+        return &(map->buckets[idx].entry.value);                                      \
+      }                                                                               \
+      if (state == tmap_state_deleted) {                                              \
+        if (deleted_idx == SIZE_MAX) {                                                \
+          deleted_idx = idx;                                                          \
+        }                                                                             \
+      } else if (TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key,         \
+                                                 key) == 0) {                         \
+        if (!allow_overwrite) {                                                       \
+          return (                                                                    \
+              ValT                                                                    \
+                  *)(TMAP_WOULD_OVERWRITE); /*NOLINT(bugprone-casting-through-void)*/ \
+        }                                                                             \
+        return &(map->buckets[idx].entry.value);                                      \
+      }                                                                               \
+      idx = (idx + 1) % map->capacity;                                                \
+    }                                                                                 \
+    return NULL;                                                                      \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES TmapInsertResult tmap_insert_##Name(                            \
+      TMAP_TYPENAME_MAP(Name) * map, KeyT const key, ValT const val,                  \
+      bool allow_overwrite) {                                                         \
+    ValT *slot = tmap_insert_slot_##Name(map, key, allow_overwrite);                  \
+    if (slot == NULL) {                                                               \
+      return TmapInsertResultErr;                                                     \
+    }                                                                                 \
+    if (slot ==                                                                       \
+        (ValT *)                                                                      \
+            TMAP_WOULD_OVERWRITE) { /*NOLINT(bugprone-casting-through-void)*/         \
+      return TmapInsertResultWouldOverwrite;                                          \
+    }                                                                                 \
+    *slot = val;                                                                      \
+    return TmapInsertResultOk;                                                        \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(TMAP_TYPENAME_MAP(Name) * map,        \
+                                                const KeyT key) {                     \
+    if (map->count == 0) {                                                            \
+      return NULL;                                                                    \
+    }                                                                                 \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    size_t idx = hash % map->capacity;                                                \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      tmap_state state = map->buckets[idx].state;                                     \
+      if (state == tmap_state_empty) {                                                \
+        return NULL;                                                                  \
+      }                                                                               \
+      if (state == tmap_state_occupied &&                                             \
+          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
+              0) {                                                                    \
+        return &(map->buckets[idx].entry.value);                                      \
+      }                                                                               \
+      idx = (idx + 1) % map->capacity;                                                \
+    }                                                                                 \
+    return NULL;                                                                      \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES const TMAP_TYPENAME_ENTRY(Name) *                               \
+      tmap_get_entry_##Name(const TMAP_TYPENAME_MAP(Name) *const map,                 \
+                            const KeyT key) {                                         \
+    if (map->count == 0) {                                                            \
+      return NULL;                                                                    \
+    }                                                                                 \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    size_t idx = hash % map->capacity;                                                \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      tmap_state state = map->buckets[idx].state;                                     \
+      if (state == tmap_state_empty) {                                                \
+        return NULL;                                                                  \
+      }                                                                               \
+      if (state == tmap_state_occupied &&                                             \
+          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
+              0) {                                                                    \
+        return &(map->buckets[idx].entry);                                            \
+      }                                                                               \
+      idx = (idx + 1) % map->capacity;                                                \
+    }                                                                                 \
+    return NULL;                                                                      \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES ValT const *tmap_get_##Name(                                    \
+      TMAP_TYPENAME_MAP(Name) const *const map, const KeyT key) {                     \
+    if (map->count == 0) {                                                            \
+      return NULL;                                                                    \
+    }                                                                                 \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    size_t idx = hash % map->capacity;                                                \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      tmap_state state = map->buckets[idx].state;                                     \
+      if (state == tmap_state_empty) {                                                \
+        return NULL;                                                                  \
+      }                                                                               \
+      if (state == tmap_state_occupied &&                                             \
+          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
+              0) {                                                                    \
+        return &(map->buckets[idx].entry.value);                                      \
+      }                                                                               \
+      idx = (idx + 1) % map->capacity;                                                \
+    }                                                                                 \
+    return NULL;                                                                      \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(TMAP_TYPENAME_MAP(Name) * map,          \
+                                              const KeyT key) {                       \
+    if (map->count == 0) {                                                            \
+      return;                                                                         \
+    }                                                                                 \
+    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    size_t idx = hash % map->capacity;                                                \
+                                                                                      \
+    for (size_t i = 0; i < map->capacity; i++) {                                      \
+      tmap_state state = map->buckets[idx].state;                                     \
+      if (state == tmap_state_empty)                                                  \
+        return;                                                                       \
+      if (state == tmap_state_occupied &&                                             \
+          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
+              0) {                                                                    \
+        map->buckets[idx].state = tmap_state_deleted;                                 \
+        map->count--;                                                                 \
+        return;                                                                       \
+      }                                                                               \
+      idx = (idx + 1) % map->capacity;                                                \
+    }                                                                                 \
+  }                                                                                   \
+                                                                                      \
+  /* Creates a new iterator for the map. */                                           \
+  TMAP_FUN_ATTRIBUTES TMAP_TYPENAME_ITER(Name)                                        \
+      tmap_iter_init_##Name(TMAP_TYPENAME_MAP(Name) const *const map) {               \
+    return (TMAP_TYPENAME_ITER(Name)){.map = map, .index = 0};                        \
+  }                                                                                   \
+                                                                                      \
+  /* Advances the iterator. Returns true and writes key/val if a next item            \
+   * exists. */                                                                       \
+  TMAP_FUN_ATTRIBUTES bool tmap_iter_next_##Name(                                     \
+      TMAP_TYPENAME_ITER(Name) *const iter,                                           \
+      TMAP_TYPENAME_ENTRY(Name) * out_entry) {                                        \
+    if (!iter->map || !iter->map->buckets) {                                          \
+      return false;                                                                   \
+    }                                                                                 \
+                                                                                      \
+    while (iter->index < iter->map->capacity) {                                       \
+      size_t i = iter->index++;                                                       \
+      if (iter->map->buckets[i].state == tmap_state_occupied) {                       \
+        if (out_entry) {                                                              \
+          *out_entry = iter->map->buckets[i].entry;                                   \
+        }                                                                             \
+        return true;                                                                  \
+      }                                                                               \
+    }                                                                                 \
+    return false;                                                                     \
+  }                                                                                   \
+                                                                                      \
+  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * map) {         \
+    if (map->capacity > 0) {                                                          \
+      memset(map->buckets, 0,                                                         \
+             map->capacity * sizeof(TMAP_TYPENAME_BUCKET(Name)));                     \
+    }                                                                                 \
+    map->count = 0;                                                                   \
+    map->occupied = 0;                                                                \
   }
 
 #define TMAP_DEFINE_AND_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)          \
