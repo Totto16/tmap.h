@@ -185,12 +185,12 @@ typedef enum {
       bool allow_overwrite);                                                   \
                                                                                \
   TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE ValT *                  \
-  tmap_put_slot_##Name(TMAP_TYPENAME_MAP(Name) * map, KeyT const key) {        \
+  tmap_put_slot_##Name(TMAP_TYPENAME_MAP(Name) * const map, KeyT const key) {        \
     return tmap_insert_slot_##Name(map, key, true);                            \
   }                                                                            \
                                                                                \
   TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE TmapResult              \
-  tmap_put_##Name(TMAP_TYPENAME_MAP(Name) * map, KeyT const key,               \
+  tmap_put_##Name(TMAP_TYPENAME_MAP(Name) * const map, KeyT const key,               \
                   ValT const val) {                                            \
     const TmapInsertResult result = tmap_insert_##Name(map, key, val, true);   \
     return result == TmapInsertResultOk ? TmapResultOk : TmapResultErr;        \
