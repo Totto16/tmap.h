@@ -185,12 +185,12 @@ typedef enum {
       bool allow_overwrite);                                                   \
                                                                                \
   TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE ValT *                  \
-  tmap_put_slot_##Name(TMAP_TYPENAME_MAP(Name) * const map, KeyT const key) {        \
+  tmap_put_slot_##Name(TMAP_TYPENAME_MAP(Name) *const map, KeyT const key) {   \
     return tmap_insert_slot_##Name(map, key, true);                            \
   }                                                                            \
                                                                                \
   TMAP_FUN_ATTRIBUTES [[nodiscard]] TMAP_STATIC_INLINE TmapResult              \
-  tmap_put_##Name(TMAP_TYPENAME_MAP(Name) * const map, KeyT const key,               \
+  tmap_put_##Name(TMAP_TYPENAME_MAP(Name) *const map, KeyT const key,          \
                   ValT const val) {                                            \
     const TmapInsertResult result = tmap_insert_##Name(map, key, val, true);   \
     return result == TmapInsertResultOk ? TmapResultOk : TmapResultErr;        \
@@ -277,7 +277,8 @@ typedef enum {
 
 #define TMAP_IMPLEMENT_MAP_TYPE(KeyT, KeyName, ValT, Name)                            \
                                                                                       \
-  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(TMAP_TYPENAME_MAP(Name) * const map) {        \
+  TMAP_FUN_ATTRIBUTES void tmap_free_##Name(                                          \
+      TMAP_TYPENAME_MAP(Name) *const map) {                                           \
     T_MAP_FREE(map->buckets);                                                         \
     *map = (TMAP_TYPENAME_MAP(Name)){0};                                              \
   }                                                                                   \
@@ -291,7 +292,7 @@ typedef enum {
   }                                                                                   \
                                                                                       \
   TMAP_FUN_ATTRIBUTES TmapResult tmap_resize_##Name(                                  \
-      TMAP_TYPENAME_MAP(Name) * const map, const size_t new_cap) {                                \
+      TMAP_TYPENAME_MAP(Name) *const map, const size_t new_cap) {                     \
     if (new_cap < map->occupied) {                                                    \
       return TmapResultErr;                                                           \
     }                                                                                 \
@@ -321,7 +322,8 @@ typedef enum {
   }                                                                                   \
                                                                                       \
   TMAP_FUN_ATTRIBUTES ValT *tmap_insert_slot_##Name(                                  \
-      TMAP_TYPENAME_MAP(Name) * const map, KeyT const key, const bool allow_overwrite) {                \
+      TMAP_TYPENAME_MAP(Name) *const map, KeyT const key,                             \
+      const bool allow_overwrite) {                                                   \
     if (map->occupied >= map->threshold) {                                            \
       size_t new_cap = T_GROWTH_FACTOR(map->capacity);                                \
       if (tmap_resize_##Name(map, new_cap) != TmapResultOk) {                         \
@@ -366,8 +368,8 @@ typedef enum {
   }                                                                                   \
                                                                                       \
   TMAP_FUN_ATTRIBUTES TmapInsertResult tmap_insert_##Name(                            \
-      TMAP_TYPENAME_MAP(Name) * const map, KeyT const key, ValT const val,                  \
-      const bool allow_overwrite) {                                                         \
+      TMAP_TYPENAME_MAP(Name) *const map, KeyT const key, ValT const val,             \
+      const bool allow_overwrite) {                                                   \
     ValT *slot = tmap_insert_slot_##Name(map, key, allow_overwrite);                  \
     if (slot == NULL) {                                                               \
       return TmapInsertResultErr;                                                     \
@@ -381,8 +383,8 @@ typedef enum {
     return TmapInsertResultOk;                                                        \
   }                                                                                   \
                                                                                       \
-  TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(TMAP_TYPENAME_MAP(Name) * const map,        \
-                                                 KeyT const key) {                     \
+  TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(                                      \
+      TMAP_TYPENAME_MAP(Name) *const map, KeyT const key) {                           \
     if (map->count == 0) {                                                            \
       return NULL;                                                                    \
     }                                                                                 \
@@ -451,8 +453,8 @@ typedef enum {
     return NULL;                                                                      \
   }                                                                                   \
                                                                                       \
-  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(TMAP_TYPENAME_MAP(Name) * const map,          \
-                                              KeyT const key) {                       \
+  TMAP_FUN_ATTRIBUTES void tmap_remove_##Name(                                        \
+      TMAP_TYPENAME_MAP(Name) *const map, KeyT const key) {                           \
     if (map->count == 0) {                                                            \
       return;                                                                         \
     }                                                                                 \
@@ -484,7 +486,7 @@ typedef enum {
    * exists. */                                                                       \
   TMAP_FUN_ATTRIBUTES bool tmap_iter_next_##Name(                                     \
       TMAP_TYPENAME_ITER(Name) *const iter,                                           \
-      TMAP_TYPENAME_ENTRY(Name) * const out_entry) {                                        \
+      TMAP_TYPENAME_ENTRY(Name) *const out_entry) {                                   \
     if (!iter->map || !iter->map->buckets) {                                          \
       return false;                                                                   \
     }                                                                                 \
@@ -501,7 +503,8 @@ typedef enum {
     return false;                                                                     \
   }                                                                                   \
                                                                                       \
-  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(TMAP_TYPENAME_MAP(Name) * const map) {         \
+  TMAP_FUN_ATTRIBUTES void tmap_clear_##Name(                                         \
+      TMAP_TYPENAME_MAP(Name) *const map) {                                           \
     if (map->capacity > 0) {                                                          \
       memset(map->buckets, 0,                                                         \
              map->capacity * sizeof(TMAP_TYPENAME_BUCKET(Name)));                     \
