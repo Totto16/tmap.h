@@ -124,14 +124,14 @@ typedef enum {
 
 #define TMAP_HASH_FUNC_NAME(KeyName) tmap_hash_type_impl_##KeyName
 
-#define TMAP_COMPARE_FUNC_NAME(KeyName) tmap_compare_type_impl_##KeyName
+#define TMAP_EQ_FUNC_NAME(KeyName) tmap_eq_type_impl_##KeyName
 
 #define TMAP_HASH_FUNC_SIG(KeyT, KeyName)                                      \
   TMAP_FUN_ATTRIBUTES TmapHashType TMAP_HASH_FUNC_NAME(KeyName)(const KeyT key)
 
-#define TMAP_COMPARE_FUNC_SIG(KeyT, KeyName)                                   \
-  TMAP_FUN_ATTRIBUTES int TMAP_COMPARE_FUNC_NAME(KeyName)(const KeyT key1,     \
-                                                          const KeyT key2)
+#define TMAP_EQ_FUNC_SIG(KeyT, KeyName)                                        \
+  TMAP_FUN_ATTRIBUTES bool TMAP_EQ_FUNC_NAME(KeyName)(const KeyT key1,         \
+                                                      const KeyT key2)
 
 // Default load factor (0.75 is standard for open addressing).
 #define TMAP_LOAD_FACTOR 0.75f
@@ -238,7 +238,7 @@ typedef enum {
                                                                                \
   TMAP_HASH_FUNC_SIG(KeyT, KeyName);                                           \
                                                                                \
-  TMAP_COMPARE_FUNC_SIG(KeyT, KeyName);                                        \
+  TMAP_EQ_FUNC_SIG(KeyT, KeyName);                                             \
   TVEC_PRAGMA_IN_MACRO(GCC diagnostic pop)
 
 #define TMAP_ASSERT_SHOULD_USE_INSERT(val)                                     \
@@ -353,8 +353,8 @@ typedef enum {
         if (deleted_idx == SIZE_MAX) {                                                \
           deleted_idx = idx;                                                          \
         }                                                                             \
-      } else if (TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key,         \
-                                                 key) == 0) {                         \
+      } else if (TMAP_EQ_FUNC_NAME(KeyName)(map->buckets[idx].entry.key,              \
+                                            key)) {                                   \
         if (!allow_overwrite) {                                                       \
           return (                                                                    \
               ValT                                                                    \
@@ -397,8 +397,7 @@ typedef enum {
         return NULL;                                                                  \
       }                                                                               \
       if (state == tmap_state_occupied &&                                             \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
-              0) {                                                                    \
+          TMAP_EQ_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key)) {             \
         return &(map->buckets[idx].entry.value);                                      \
       }                                                                               \
       idx = (idx + 1) % map->capacity;                                                \
@@ -421,8 +420,7 @@ typedef enum {
         return NULL;                                                                  \
       }                                                                               \
       if (state == tmap_state_occupied &&                                             \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
-              0) {                                                                    \
+          TMAP_EQ_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key)) {             \
         return &(map->buckets[idx].entry);                                            \
       }                                                                               \
       idx = (idx + 1) % map->capacity;                                                \
@@ -444,8 +442,7 @@ typedef enum {
         return NULL;                                                                  \
       }                                                                               \
       if (state == tmap_state_occupied &&                                             \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
-              0) {                                                                    \
+          TMAP_EQ_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key)) {             \
         return &(map->buckets[idx].entry.value);                                      \
       }                                                                               \
       idx = (idx + 1) % map->capacity;                                                \
@@ -466,8 +463,7 @@ typedef enum {
       if (state == tmap_state_empty)                                                  \
         return;                                                                       \
       if (state == tmap_state_occupied &&                                             \
-          TMAP_COMPARE_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key) ==        \
-              0) {                                                                    \
+          TMAP_EQ_FUNC_NAME(KeyName)(map->buckets[idx].entry.key, key)) {             \
         map->buckets[idx].state = tmap_state_deleted;                                 \
         map->count--;                                                                 \
         return;                                                                       \
