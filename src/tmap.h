@@ -304,7 +304,7 @@ typedef enum {
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
       if (map->buckets[i].state == tmap_state_occupied) {                             \
-        TmapHashType hash =                                                           \
+        const TmapHashType hash =                                                     \
             TMAP_HASH_FUNC_NAME(KeyName)(map->buckets[i].entry.key);                  \
         size_t idx = hash % new_cap;                                                  \
         while (new_buckets[idx].state == tmap_state_occupied) {                       \
@@ -325,17 +325,17 @@ typedef enum {
       TMAP_TYPENAME_MAP(Name) *const map, KeyT const key,                             \
       const bool allow_overwrite) {                                                   \
     if (map->occupied >= map->threshold) {                                            \
-      size_t new_cap = T_GROWTH_FACTOR(map->capacity);                                \
+      const size_t new_cap = T_GROWTH_FACTOR(map->capacity);                          \
       if (tmap_resize_##Name(map, new_cap) != TmapResultOk) {                         \
         return NULL;                                                                  \
       }                                                                               \
     }                                                                                 \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    const TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                      \
     size_t idx = hash % map->capacity;                                                \
     size_t deleted_idx = SIZE_MAX;                                                    \
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
-      tmap_state state = map->buckets[idx].state;                                     \
+      const tmap_state state = map->buckets[idx].state;                               \
       if (state == tmap_state_empty) {                                                \
         if (deleted_idx != SIZE_MAX) {                                                \
           idx = deleted_idx;                                                          \
@@ -384,15 +384,16 @@ typedef enum {
   }                                                                                   \
                                                                                       \
   TMAP_FUN_ATTRIBUTES ValT *tmap_get_mut_##Name(                                      \
-      TMAP_TYPENAME_MAP(Name) *const map, KeyT const key) {                           \
+      TMAP_TYPENAME_MAP(Name) *const map,                                             \
+      KeyT const key) { /*NOLINT(totto-const-correctness-c)*/                         \
     if (map->count == 0) {                                                            \
       return NULL;                                                                    \
     }                                                                                 \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    const TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                      \
     size_t idx = hash % map->capacity;                                                \
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
-      tmap_state state = map->buckets[idx].state;                                     \
+      const tmap_state state = map->buckets[idx].state;                               \
       if (state == tmap_state_empty) {                                                \
         return NULL;                                                                  \
       }                                                                               \
@@ -411,11 +412,11 @@ typedef enum {
     if (map->count == 0) {                                                            \
       return NULL;                                                                    \
     }                                                                                 \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    const TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                      \
     size_t idx = hash % map->capacity;                                                \
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
-      tmap_state state = map->buckets[idx].state;                                     \
+      const tmap_state state = map->buckets[idx].state;                               \
       if (state == tmap_state_empty) {                                                \
         return NULL;                                                                  \
       }                                                                               \
@@ -433,11 +434,11 @@ typedef enum {
     if (map->count == 0) {                                                            \
       return NULL;                                                                    \
     }                                                                                 \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    const TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                      \
     size_t idx = hash % map->capacity;                                                \
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
-      tmap_state state = map->buckets[idx].state;                                     \
+      const tmap_state state = map->buckets[idx].state;                               \
       if (state == tmap_state_empty) {                                                \
         return NULL;                                                                  \
       }                                                                               \
@@ -455,11 +456,11 @@ typedef enum {
     if (map->count == 0) {                                                            \
       return;                                                                         \
     }                                                                                 \
-    TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                            \
+    const TmapHashType hash = TMAP_HASH_FUNC_NAME(KeyName)(key);                      \
     size_t idx = hash % map->capacity;                                                \
                                                                                       \
     for (size_t i = 0; i < map->capacity; i++) {                                      \
-      tmap_state state = map->buckets[idx].state;                                     \
+      const tmap_state state = map->buckets[idx].state;                               \
       if (state == tmap_state_empty)                                                  \
         return;                                                                       \
       if (state == tmap_state_occupied &&                                             \
@@ -488,7 +489,7 @@ typedef enum {
     }                                                                                 \
                                                                                       \
     while (iter->index < iter->map->capacity) {                                       \
-      size_t i = iter->index++;                                                       \
+      const size_t i = iter->index++;                                                 \
       if (iter->map->buckets[i].state == tmap_state_occupied) {                       \
         if (out_entry) {                                                              \
           *out_entry = iter->map->buckets[i].entry;                                   \
