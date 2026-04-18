@@ -134,7 +134,7 @@ typedef enum {
                                                       const KeyT key2)
 
 // Default load factor (0.75 is standard for open addressing).
-#define TMAP_LOAD_FACTOR 0.75f
+#define TMAP_LOAD_FACTOR 0.75
 
 #define TMAP_TYPENAME_ENTRY(TypeName) tmap_entry_##TypeName
 
@@ -317,7 +317,7 @@ typedef enum {
     map->buckets = new_buckets;                                                       \
     map->capacity = new_cap;                                                          \
     map->occupied = map->count; /* Deleted items are purged during resize. */         \
-    map->threshold = (size_t)(new_cap * TMAP_LOAD_FACTOR);                            \
+    map->threshold = (size_t)((double)new_cap * TMAP_LOAD_FACTOR);                            \
     return TmapResultOk;                                                              \
   }                                                                                   \
                                                                                       \
